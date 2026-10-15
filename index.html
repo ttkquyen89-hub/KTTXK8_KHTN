@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phiếu Bài Thi Hóa Học</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet">
+    
+    <!-- Cấu hình MathJax để hiển thị công thức LaTeX -->
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['\\(', '\\)']],
+                displayMath: [['\\[', '\\]']],
+                processEscapes: true
+            },
+            startup: {
+                typeset: false // Tắt tự động render lúc đầu, chúng ta sẽ gọi thủ công
+            }
+        };
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js" id="MathJax-script" async></script>
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0fdfa; /* Light teal */
+            color: #1f2937;
+            /* Khóa cuộn trang khi đang ở màn hình intro */
+            overflow: hidden; 
+        }
+        
+        /* Loại bỏ mũi tên tăng giảm của ô input number */
+        input[type="number"]::-webkit-inner-spin-button,
+        input[type="number"]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        input[type="number"] {
+            -moz-appearance: textfield;
+        }
+
+        /* Tùy chỉnh nút Radio */
+        .custom-radio:checked + div {
+            border-color: #0ea5e9;
+            background-color: #e0f2fe;
+        }
+        .custom-radio:checked + div .radio-dot {
+            background-color: #0ea5e9;
+            transform: scale(1);
+        }
+
+        /* Hiệu ứng Fade-in */
+        .fade-in {
+            animation: fadeIn 0.6s ease-out forwards;
+            opacity: 0;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        mjx-container {
+            font-size: 1.1em !important;
+        }
+
+        /* Hiệu ứng rung báo lỗi cho màn hình chờ */
+        .shake {
+            animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both;
+        }
+        @keyframes shake {
+            10%, 90% { transform: translate3d(-2px, 0, 0); }
+            20%, 80% { transform: translate3d(4px, 0, 0); }
+            30%, 50%, 70% { transform: translate3d(-6px, 0, 0); }
+            40%, 60% { transform: translate3d(6px, 0, 0); }
+        }
+
+        /* Chữ 3D màu cam đậm */
+        .title-3d {
+            color: #ea580c; /* Cam đậm Tailwind orange-600 */
+            text-shadow: 
+                2px 2px 0px #9a3412, /* Viền tối 1 */
+                4px 4px 0px #7c2d12, /* Viền tối 2 */
+                6px 6px 0px #431407, /* Viền tối 3 */
+                8px 8px 10px rgba(0,0,0,0.5); /* Bóng đổ */
+        }
+    </style>
+</head>
+<body class="min-h-screen">
+
+    <!-- Màn Hình Chờ (Intro Screen) -->
+    <div id="intro-screen" class="fixed inset-0 z-50 flex items-center justify-center bg-green-900 px-4 transition-opacity duration-500">
+        <div class="bg-white/95 backdrop-blur-sm rounded-3xl shadow-2xl p-8 md:p-12 max-w-xl w-full text-center border-4 border-orange-500" id="intro-box">
+            
+            <h1 class="text-4xl md:text-5xl font-black mb-2 title-3d tracking-wider uppercase leading-tight">
+                KIỂM TRA THƯỜNG XUYÊN
+            </h1>
+            <h2 class="text-3xl md:text-4xl font-black mb-10 title-3d tracking-wider uppercase">
+                KHTN 8
+            </h2>
+            
+            <div class="space-y-6 text-left mb-10">
+                <div>
+                    <label class="block text-gray-800 font-bold mb-2 text-lg">Họ và tên học sinh:</label>
+                    <input type="text" id="intro-name" class="w-full px-5 py-4 border-2 border-gray-300 rounded-xl focus:border-green-600 focus:ring-4 focus:ring-green-100 outline-none text-xl transition-all shadow-inner font-medium text-green-900" placeholder="Nhập họ và tên...">
+                </div>
+                <div>
+                    <label class="block text-gray-800 font-bold mb-2 text-lg">Lớp:</label>
+                    <input type="text" id="intro-class" class="w-full px-5 py-4 border-2 border-gray-300 rounded-xl focus:border-green-600 focus:ring-4 focus:ring-green-100 outline-none text-xl transition-all shadow-inner font-medium text-green-900" placeholder="Nhập lớp (VD: 8A1)...">
+                </div>
+            </div>
+
+            <button onclick="startExam()" class="w-full inline-flex items-center justify-center px-8 py-5 text-2xl font-black rounded-2xl text-white bg-orange-600 hover:bg-orange-500 shadow-[0_8px_0_#9a3412] active:shadow-[0_0px_0_#9a3412] active:translate-y-[8px] transition-all duration-150 ease-in-out uppercase tracking-wide">
+                BẮT ĐẦU LÀM BÀI
+            </button>
+        </div>
+    </div>
+
+    <div class="max-w-4xl mx-auto py-10 px-4 sm:px-6 lg:px-8">
+        <!-- Header Banner - Format Bài Thi -->
+        <div class="bg-white rounded-xl shadow-md border border-gray-300 mb-10 overflow-hidden" id="exam-header-box">
+            <div class="p-6 md:p-8">
+                <!-- Thông tin học sinh và Đề thi -->
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center border-b-2 border-gray-200 pb-6 mb-6 gap-4">
+                    <div class="w-full md:w-1/2 space-y-4 text-lg">
+                        <div class="flex items-center">
+                            <span class="font-semibold w-24">Họ và tên:</span>
+                            <input type="text" id="header-name" class="flex-1 border-b border-dashed border-gray-400 focus:border-teal-500 outline-none px-2 py-1 bg-transparent text-teal-800 font-bold" readonly placeholder="......................................................">
+                        </div>
+                        <div class="flex items-center">
+                            <span class="font-semibold w-24">Lớp:</span>
+                            <input type="text" id="header-class" class="flex-1 border-b border-dashed border-gray-400 focus:border-teal-500 outline-none px-2 py-1 bg-transparent text-teal-800 font-bold" readonly placeholder="......................................................">
+                        </div>
+                    </div>
+                    <div class="w-full md:w-1/2 text-center md:text-right">
+                        <h1 class="text-2xl md:text-3xl font-extrabold text-teal-700 uppercase tracking-wide">Phiếu Bài Thi Hóa Học</h1>
+                        <p class="text-gray-600 font-medium mt-1">Kiểm tra thường xuyên KHTN 8</p>
+                    </div>
+                </div>
+
+                <!-- Khung Điểm và Lời phê -->
+                <div class="flex flex-col md:flex-row border-2 border-teal-700 rounded-lg overflow-hidden">
+                    <div class="w-full md:w-1/3 border-b-2 md:border-b-0 md:border-r-2 border-teal-700 bg-teal-50 flex flex-col">
+                        <div class="font-bold text-center py-2 border-b-2 border-teal-700 bg-teal-600 text-white uppercase tracking-wider">Điểm</div>
+                        <div class="flex-1 flex items-center justify-center min-h-[100px] p-4">
+                            <span id="exam-score" class="text-5xl font-black text-red-600"></span>
+                        </div>
+                    </div>
+                    <div class="w-full md:w-2/3 bg-white flex flex-col">
+                        <div class="font-bold text-center py-2 border-b-2 border-teal-700 bg-teal-600 text-white uppercase tracking-wider">Lời phê của giáo viên</div>
+                        <div class="flex-1 flex items-center justify-center p-6 text-center min-h-[100px]">
+                            <span id="exam-comment" class="text-xl font-medium text-gray-400 italic">Chưa có lời phê</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quiz Container -->
+        <div id="quiz-container" class="space-y-10">
+            <div class="text-center py-10 text-gray-500 font-medium animate-pulse text-lg">
+                Đang chuẩn bị đề thi cho bạn...
+            </div>
+        </div>
+
+        <!-- Action Button (Chỉ có 1 nút 3D Đỏ) -->
+        <div class="mt-12 text-center hidden mb-10" id="submit-section">
+            <button id="btn-action" onclick="handleAction()" class="inline-flex items-center justify-center px-12 py-4 text-2xl font-bold rounded-2xl text-white bg-red-600 hover:bg-red-500 shadow-[0_8px_0_#991b1b] active:shadow-[0_0px_0_#991b1b] active:translate-y-[8px] transition-all duration-150 ease-in-out tracking-wide">
+                <svg class="w-7 h-7 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                <span id="btn-text">Nộp Bài Thi</span>
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Trạng thái bài thi (đang làm bài hay đã nộp)
+        let isSubmitted = false;
+
+        // Ngân hàng dữ liệu câu hỏi
+        const questionBank = {
+            part1: [
+                { id: 'p1_1', type: 'mcq', q: 'Công thức tính số mol chất khi biết khối lượng chất là:', options: ['\\(n=m\\times M\\)', '\\(n=\\dfrac{m}{M}\\)', '\\(n=\\dfrac{M}{m}\\)', '\\(n=m+M\\)'], ans: '\\(n=\\dfrac{m}{M}\\)', exp: 'Công thức đúng là \\(n = \\dfrac{m}{M}\\).' },
+                { id: 'p1_2', type: 'mcq', q: 'Công thức tính khối lượng chất khi biết số mol là:', options: ['\\(m=\\dfrac{n}{M}\\)', '\\(m=n+M\\)', '\\(m=n\\times M\\)', '\\(m=\\dfrac{M}{n}\\)'], ans: '\\(m=n\\times M\\)', exp: 'Từ \\(n = \\dfrac{m}{M}\\) suy ra \\(m = n \\times M\\).' },
+                { id: 'p1_3', type: 'mcq', q: 'Công thức tính số mol chất khí ở điều kiện chuẩn khi biết thể tích khí là:', options: ['\\(n=V\\times 24,79\\)', '\\(n=\\dfrac{24,79}{V}\\)', '\\(n=\\dfrac{V}{24,79}\\)', '\\(n=V+24,79\\)'], ans: '\\(n=\\dfrac{V}{24,79}\\)', exp: 'Thể tích mol khí ở đkc là 24,79 L/mol, nên \\(n = \\dfrac{V}{24,79}\\).' },
+                { id: 'p1_4', type: 'mcq', q: 'Công thức tính nồng độ mol của dung dịch là:', options: ['\\(C_M=\\dfrac{n}{V}\\)', '\\(C_M=\\dfrac{m}{V}\\)', '\\(C_M=\\dfrac{V}{n}\\)', '\\(C_M=n\\times V\\)'], ans: '\\(C_M=\\dfrac{n}{V}\\)', exp: 'Nồng độ mol bằng số mol chất tan chia thể tích dung dịch: \\(C_M = \\dfrac{n}{V}\\).' },
+                { id: 'p1_5', type: 'mcq', q: 'Công thức tính nồng độ phần trăm của dung dịch là:', options: ['\\(C\\%=\\dfrac{m_{dd}}{m_{ct}}\\times 100\\%\\)', '\\(C\\%=\\dfrac{m_{ct}}{m_{dd}}\\times 100\\%\\)', '\\(C\\%=\\dfrac{m_{ct}}{V_{dd}}\\times 100\\%\\)', '\\(C\\%=m_{ct}\\times m_{dd}\\)'], ans: '\\(C\\%=\\dfrac{m_{ct}}{m_{dd}}\\times 100\\%\\)', exp: 'Nồng độ phần trăm: \\(C\\% = \\dfrac{m_{ct}}{m_{dd}} \\times 100\\%\\).' }
+            ],
+            part2: [
+                { id: 'p2_1', type: 'fill', q: 'Tính số mol của 12 g carbon (\\(C\\)), biết \\(M_C=12\\) g/mol.', ans: '1', exp: '\\(n = \\dfrac{m}{M} = \\dfrac{12}{12} = 1\\) (mol).' },
+                { id: 'p2_2', type: 'fill', q: 'Tính số mol của 32 g oxygen (\\(O_2\\)), biết \\(M_{O_2}=32\\) g/mol.', ans: '1', exp: '\\(n = \\dfrac{m}{M} = \\dfrac{32}{32} = 1\\) (mol).' },
+                { id: 'p2_3', type: 'fill', q: 'Tính số mol của 9 g nước (\\(H_2O\\)), biết \\(M_{H_2O}=18\\) g/mol.', ans: '0.5', exp: '\\(n = \\dfrac{m}{M} = \\dfrac{9}{18} = 0,5\\) (mol).' },
+                { id: 'p2_4', type: 'fill', q: 'Tính số mol của 5,6 g iron (Fe), biết \\(M_{Fe}=56\\) g/mol.', ans: '0.1', exp: '\\(n = \\dfrac{m}{M} = \\dfrac{5,6}{56} = 0,1\\) (mol).' },
+                { id: 'p2_5', type: 'fill', q: 'Tính số mol của 8,8 g carbon dioxide (\\(CO_2\\)), biết \\(M_{CO_2}=44\\) g/mol.', ans: '0.2', exp: '\\(n = \\dfrac{m}{M} = \\dfrac{8,8}{44} = 0,2\\) (mol).' },
+                { id: 'p2_6', type: 'fill', q: 'Tính số mol của 24,79 L khí hydrogen (\\(H_2\\)) ở điều kiện chuẩn.', ans: '1', exp: '\\(n = \\dfrac{V}{24,79} = \\dfrac{24,79}{24,79} = 1\\) (mol).' },
+                { id: 'p2_7', type: 'fill', q: 'Tính số mol của 12,395 L khí nitrogen (\\(N_2\\)) ở điều kiện chuẩn.', ans: '0.5', exp: '\\(n = \\dfrac{V}{24,79} = \\dfrac{12,395}{24,79} = 0,5\\) (mol).' },
+                { id: 'p2_8', type: 'fill', q: 'Tính số mol của 4,958 L khí oxygen (\\(O_2\\)) ở điều kiện chuẩn.', ans: '0.2', exp: '\\(n = \\dfrac{V}{24,79} = \\dfrac{4,958}{24,79} = 0,2\\) (mol).' },
+                { id: 'p2_9', type: 'fill', q: 'Tính số mol của 49,58 L khí carbon dioxide (\\(CO_2\\)) ở điều kiện chuẩn.', ans: '2', exp: '\\(n = \\dfrac{V}{24,79} = \\dfrac{49,58}{24,79} = 2\\) (mol).' },
+                { id: 'p2_10', type: 'fill', q: 'Tính số mol của 6,1975 L khí hydrogen (\\(H_2\\)) ở điều kiện chuẩn.', ans: '0.25', exp: '\\(n = \\dfrac{V}{24,79} = \\dfrac{6,1975}{24,79} = 0,25\\) (mol).' }
+            ],
+            part3: [
+                { id: 'p3_1', type: 'bal', react: ['\\mathrm{H_2}', '\\mathrm{O_2}'], prod: ['\\mathrm{H_2O}'], ans: ['2', '1', '2'], exp: '\\(2\\mathrm{H_2} + \\mathrm{O_2} \\rightarrow 2\\mathrm{H_2O}\\)' },
+                { id: 'p3_2', type: 'bal', react: ['\\mathrm{Fe}', '\\mathrm{O_2}'], prod: ['\\mathrm{Fe_3O_4}'], ans: ['3', '2', '1'], exp: '\\(3\\mathrm{Fe} + 2\\mathrm{O_2} \\rightarrow \\mathrm{Fe_3O_4}\\)' },
+                { id: 'p3_3', type: 'bal', react: ['\\mathrm{Mg}', '\\mathrm{O_2}'], prod: ['\\mathrm{MgO}'], ans: ['2', '1', '2'], exp: '\\(2\\mathrm{Mg} + \\mathrm{O_2} \\rightarrow 2\\mathrm{MgO}\\)' },
+                { id: 'p3_4', type: 'bal', react: ['\\mathrm{Al}', '\\mathrm{O_2}'], prod: ['\\mathrm{Al_2O_3}'], ans: ['4', '3', '2'], exp: '\\(4\\mathrm{Al} + 3\\mathrm{O_2} \\rightarrow 2\\mathrm{Al_2O_3}\\)' },
+                { id: 'p3_5', type: 'bal', react: ['\\mathrm{Zn}', '\\mathrm{HCl}'], prod: ['\\mathrm{ZnCl_2}', '\\mathrm{H_2}'], ans: ['1', '2', '1', '1'], exp: '\\(\\mathrm{Zn} + 2\\mathrm{HCl} \\rightarrow \\mathrm{ZnCl_2} + \\mathrm{H_2}\\)' },
+                { id: 'p3_6', type: 'bal', react: ['\\mathrm{Fe}', '\\mathrm{HCl}'], prod: ['\\mathrm{FeCl_2}', '\\mathrm{H_2}'], ans: ['1', '2', '1', '1'], exp: '\\(\\mathrm{Fe} + 2\\mathrm{HCl} \\rightarrow \\mathrm{FeCl_2} + \\mathrm{H_2}\\)' },
+                { id: 'p3_7', type: 'bal', react: ['\\mathrm{Na}', '\\mathrm{H_2O}'], prod: ['\\mathrm{NaOH}', '\\mathrm{H_2}'], ans: ['2', '2', '2', '1'], exp: '\\(2\\mathrm{Na} + 2\\mathrm{H_2O} \\rightarrow 2\\mathrm{NaOH} + \\mathrm{H_2}\\)' },
+                { id: 'p3_8', type: 'bal', react: ['\\mathrm{KClO_3}'], prod: ['\\mathrm{KCl}', '\\mathrm{O_2}'], ans: ['2', '2', '3'], exp: '\\(2\\mathrm{KClO_3} \\rightarrow 2\\mathrm{KCl} + 3\\mathrm{O_2}\\)' },
+                { id: 'p3_9', type: 'bal', react: ['\\mathrm{CaCO_3}'], prod: ['\\mathrm{CaO}', '\\mathrm{CO_2}'], ans: ['1', '1', '1'], exp: '\\(\\mathrm{CaCO_3} \\rightarrow \\mathrm{CaO} + \\mathrm{CO_2}\\)' },
+                { id: 'p3_10', type: 'bal', react: ['\\mathrm{CH_4}', '\\mathrm{O_2}'], prod: ['\\mathrm{CO_2}', '\\mathrm{H_2O}'], ans: ['1', '2', '1', '2'], exp: '\\(\\mathrm{CH_4} + 2\\mathrm{O_2} \\rightarrow \\mathrm{CO_2} + 2\\mathrm{H_2O}\\)' }
+            ]
+        };
+
+        let currentQuizData = { part1: [], part2: [], part3: [] };
+
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
+
+        function encodeBase64(str) {
+            return btoa(encodeURIComponent(str));
+        }
+        function decodeBase64(str) {
+            return decodeURIComponent(atob(str));
+        }
+
+        function startExam() {
+            const nameInput = document.getElementById('intro-name');
+            const classInput = document.getElementById('intro-class');
+            const introBox = document.getElementById('intro-box');
+
+            // Kiểm tra xem đã điền đủ thông tin chưa
+            if (!nameInput.value.trim() || !classInput.value.trim()) {
+                introBox.classList.remove('shake'); // Reset animation
+                void introBox.offsetWidth; // Trigger reflow
+                introBox.classList.add('shake');
+                return;
+            }
+
+            // Gắn dữ liệu vào phiếu thi chính thức
+            document.getElementById('header-name').value = nameInput.value.trim();
+            document.getElementById('header-class').value = classInput.value.trim();
+
+            // Làm mờ và ẩn màn hình chờ
+            const introScreen = document.getElementById('intro-screen');
+            introScreen.style.opacity = '0';
+            setTimeout(() => {
+                introScreen.style.display = 'none';
+                document.body.style.overflow = 'auto'; // Cho phép cuộn trang lại
+            }, 500);
+        }
+
+        function initQuiz() {
+            isSubmitted = false;
+
+            // Reset Format Bài Thi
+            document.getElementById('exam-score').textContent = '';
+            const examCommentEl = document.getElementById('exam-comment');
+            examCommentEl.textContent = 'Chưa có lời phê';
+            examCommentEl.className = "text-xl font-medium text-gray-400 italic";
+            
+            // Đặt lại giao diện Nút (Về trạng thái màu đỏ, Nộp bài thi)
+            document.getElementById('submit-section').classList.add('hidden');
+            const btnAction = document.getElementById('btn-action');
+            btnAction.className = "inline-flex items-center justify-center px-12 py-4 text-2xl font-bold rounded-2xl text-white bg-red-600 hover:bg-red-500 shadow-[0_8px_0_#991b1b] active:shadow-[0_0px_0_#991b1b] active:translate-y-[8px] transition-all duration-150 ease-in-out tracking-wide";
+            btnAction.innerHTML = `<svg class="w-7 h-7 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg><span id="btn-text">Nộp Bài Thi</span>`;
+
+            document.getElementById('quiz-container').innerHTML = '<div class="text-center py-10 text-gray-500 font-medium animate-pulse text-lg">Đang trộn đề thi...</div>';
+
+            // Xáo trộn và lấy ngẫu nhiên 3 câu (P1, P2) và 4 câu (P3)
+            const p1 = [...questionBank.part1]; shuffleArray(p1);
+            const p2 = [...questionBank.part2]; shuffleArray(p2);
+            const p3 = [...questionBank.part3]; shuffleArray(p3);
+
+            currentQuizData.part1 = p1.slice(0, 3);
+            currentQuizData.part2 = p2.slice(0, 3);
+            currentQuizData.part3 = p3.slice(0, 4);
+            
+            // Xáo trộn đáp án cho phần 1
+            currentQuizData.part1.forEach(q => {
+                q.shuffledOptions = [...q.options];
+                shuffleArray(q.shuffledOptions);
+            });
+
+            setTimeout(renderApp, 300);
+        }
+
+        function getMCQHtml(q, index) {
+            let html = `
+                <div class="bg-white rounded-2xl p-6 md:p-8 shadow-sm border border-gray-100 mb-6" id="${q.id}-box">
+                    <h3 class="text-xl font-semibold text-gray-800 mb-5"><span class="text-teal-600 bg-teal-50 px-3 py-1 rounded-lg mr-2 inline-block">Câu ${index}</span> ${q.q}</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">`;
+            
+            q.shuffledOptions.forEach(opt => {
+                const val = encodeBase64(opt);
+                html += `
+                    <label class="relative cursor-pointer group h-full w-full">
+                        <input type="radio" name="${q.id}" value="${val}" class="custom-radio peer sr-only">
+                        <div class="flex items-center p-4 bg-gray-50 rounded-xl border-2 border-transparent peer-checked:border-sky-500 peer-checked:bg-sky-50 group-hover:bg-gray-100 transition-all shadow-sm h-full w-full min-h-[80px]">
+                            <div class="w-6 h-6 rounded-full border-2 border-gray-300 mr-4 flex items-center justify-center bg-white flex-shrink-0">
+                                <div class="w-3 h-3 rounded-full radio-dot scale-0 transition-transform bg-transparent"></div>
+                            </div>
+                            <div class="text-gray-800 font-medium text-lg">${opt}</div>
+                        </div>
+                    </label>`;
+            });
+
+            return html + `</div><div id="${q.id}-feedback" class="mt-5 hidden p-5 rounded-xl text-base font-medium"></div></div>`;
+        }
+
+        function getFillHtml(q, index) {
+            return `
+                <div class="bg-white rounded-2xl p-6 md:p-8 shadow-sm border border-gray-100 mb-6" id="${q.id}-box">
+                    <h3 class="text-xl font-semibold text-gray-800 mb-5"><span class="text-teal-600 bg-teal-50 px-3 py-1 rounded-lg mr-2 inline-block">Câu ${index}</span> ${q.q}</h3>
+                    <div class="flex items-center mt-3 flex-wrap gap-2 text-xl md:text-2xl font-bold bg-gray-50 p-4 rounded-xl border border-gray-200 w-fit">
+                        <span>\\( n = \\)</span>
+                        <input type="number" step="any" id="${q.id}-input" class="w-24 px-2 py-2 border-2 border-gray-300 rounded-lg focus:border-teal-500 outline-none text-center text-cyan-700 shadow-inner bg-white transition-colors mx-2" placeholder="?">
+                        <span>mol</span>
+                    </div>
+                    <div id="${q.id}-feedback" class="mt-5 hidden p-5 rounded-xl text-base font-medium"></div>
+                </div>`;
+        }
+
+        function getBalHtml(q, index) {
+            let html = `
+                <div class="bg-white rounded-2xl p-6 md:p-8 shadow-sm border border-gray-100 mb-6" id="${q.id}-box">
+                    <h3 class="text-xl font-semibold text-gray-800 mb-5"><span class="text-teal-600 bg-teal-50 px-3 py-1 rounded-lg mr-2 inline-block">Câu ${index}</span> Hoàn thành và cân bằng sơ đồ phản ứng sau:</h3>
+                    <div class="flex flex-wrap items-center gap-2 md:gap-4 bg-gray-50 p-4 md:p-6 rounded-xl border border-gray-200 w-fit mx-auto md:mx-0">`;
+            
+            let inputIdx = 0;
+            const selectOptions = `<option value=""></option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option>`;
+            
+            // Reactants
+            q.react.forEach((r, i) => {
+                html += `
+                    <div class="flex items-center">
+                        <select id="${q.id}-in-${inputIdx++}" class="w-14 h-12 md:w-16 md:h-14 border-2 border-gray-300 bg-white text-center text-xl font-bold text-cyan-700 focus:border-teal-500 outline-none rounded-lg shadow-sm cursor-pointer appearance-none pl-4 pr-6 mr-2 bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23134e4a%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E')] bg-[length:10px_10px] bg-no-repeat bg-[position:right_8px_center]">
+                            ${selectOptions}
+                        </select>
+                        <span class="text-xl md:text-2xl font-bold">\\( ${r} \\)</span>
+                    </div>`;
+                if (i < q.react.length - 1) html += `<span class="text-gray-500 font-black text-2xl px-1 md:px-2">+</span>`;
+            });
+
+            html += `<span class="text-teal-600 font-bold px-2 md:px-4 text-2xl md:text-3xl">\\( \\rightarrow \\)</span>`;
+
+            // Products
+            q.prod.forEach((p, i) => {
+                html += `
+                    <div class="flex items-center">
+                        <select id="${q.id}-in-${inputIdx++}" class="w-14 h-12 md:w-16 md:h-14 border-2 border-gray-300 bg-white text-center text-xl font-bold text-cyan-700 focus:border-teal-500 outline-none rounded-lg shadow-sm cursor-pointer appearance-none pl-4 pr-6 mr-2 bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23134e4a%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E')] bg-[length:10px_10px] bg-no-repeat bg-[position:right_8px_center]">
+                            ${selectOptions}
+                        </select>
+                        <span class="text-xl md:text-2xl font-bold">\\( ${p} \\)</span>
+                    </div>`;
+                if (i < q.prod.length - 1) html += `<span class="text-gray-500 font-black text-2xl px-1 md:px-2">+</span>`;
+            });
+
+            return html + `</div><div id="${q.id}-feedback" class="mt-5 hidden p-5 rounded-xl text-base font-medium"></div></div>`;
+        }
+
+        function renderApp() {
+            const container = document.getElementById('quiz-container');
+            if(!container) return;
+
+            let html = '';
+            let qNum = 1;
+
+            // Render Part 1
+            html += `<div class="fade-in" style="animation-delay: 0.1s;"><h2 class="text-2xl font-extrabold text-teal-800 mb-2">Phần I. Trắc nghiệm – Chọn đáp án đúng</h2><p class="text-gray-600 mb-6 ml-1">Khoanh tròn chữ cái đứng trước đáp án đúng nhất.</p>`;
+            currentQuizData.part1.forEach(q => html += getMCQHtml(q, qNum++));
+            html += `</div>`;
+
+            // Render Part 2
+            html += `<div class="fade-in mt-10" style="animation-delay: 0.2s;"><h2 class="text-2xl font-extrabold text-teal-800 mb-2">Phần II. Bài tập điền đáp án – Tính số mol</h2><p class="text-gray-600 mb-6 ml-1"><strong>Chú ý:</strong> Cách ghi số thập phân: sử dụng dấu chấm (.) hoặc dấu phẩy (,) (Ví dụ: 0.5 hoặc 0,5).</p>`;
+            currentQuizData.part2.forEach(q => html += getFillHtml(q, qNum++));
+            html += `</div>`;
+
+            // Render Part 3
+            html += `<div class="fade-in mt-10" style="animation-delay: 0.3s;"><h2 class="text-2xl font-extrabold text-teal-800 mb-2">Phần III. Cân bằng phương trình hóa học</h2><p class="text-gray-600 mb-6 ml-1">Nhấp vào ô trống để chọn hệ số thích hợp. <strong>Hệ số 1 thì để trống.</strong></p>`;
+            currentQuizData.part3.forEach(q => html += getBalHtml(q, qNum++));
+            html += `</div>`;
+
+            container.innerHTML = html;
+
+            // Render MathJax
+            if (window.MathJax && window.MathJax.typesetPromise) {
+                MathJax.typesetPromise([container]).then(() => {
+                    document.getElementById('submit-section').classList.remove('hidden');
+                }).catch((err) => console.log('MathJax error: ', err));
+            } else {
+                document.getElementById('submit-section').classList.remove('hidden');
+            }
+        }
+
+        function displayFeedback(id, isCorrect, expText) {
+            const fbBox = document.getElementById(`${id}-feedback`);
+            const qBox = document.getElementById(`${id}-box`);
+            fbBox.classList.remove('hidden');
+            
+            if (isCorrect) {
+                qBox.className = "bg-green-50 rounded-2xl p-6 md:p-8 shadow-sm border-2 border-green-300 mb-6 transition-colors duration-300";
+                fbBox.className = "mt-5 p-4 rounded-xl text-base font-medium bg-green-100 text-green-900 flex items-start border border-green-200";
+                fbBox.innerHTML = `<svg class="w-6 h-6 mr-3 mt-0.5 flex-shrink-0 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg> <div><strong>Chính xác!</strong><br><span class="mt-1 block">${expText}</span></div>`;
+            } else {
+                qBox.className = "bg-red-50 rounded-2xl p-6 md:p-8 shadow-sm border-2 border-red-300 mb-6 transition-colors duration-300";
+                fbBox.className = "mt-5 p-4 rounded-xl text-base font-medium bg-red-100 text-red-900 flex items-start border border-red-200";
+                fbBox.innerHTML = `<svg class="w-6 h-6 mr-3 mt-0.5 flex-shrink-0 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg> <div><strong>Chưa đúng.</strong><br><span class="mt-1 block">Giải thích: ${expText}</span></div>`;
+            }
+            return fbBox; 
+        }
+
+        function handleAction() {
+            if (!isSubmitted) {
+                submitQuiz(); // Chấm điểm
+            } else {
+                initQuiz(); // Làm lại đề khác
+            }
+        }
+
+        function submitQuiz() {
+            let score = 0;
+            const total = 10;
+            const feedbackBoxes = []; 
+
+            // Chấm Phần 1
+            currentQuizData.part1.forEach(q => {
+                const checked = document.querySelector(`input[name="${q.id}"]:checked`);
+                if (checked) {
+                    const checkedVal = decodeBase64(checked.value);
+                    if (checkedVal === q.ans) {
+                        score++; 
+                        feedbackBoxes.push(displayFeedback(q.id, true, q.exp));
+                    } else {
+                        feedbackBoxes.push(displayFeedback(q.id, false, q.exp));
+                    }
+                } else {
+                    feedbackBoxes.push(displayFeedback(q.id, false, q.exp));
+                }
+            });
+
+            // Chấm Phần 2
+            currentQuizData.part2.forEach(q => {
+                const valStr = document.getElementById(`${q.id}-input`).value.trim();
+                const valFloat = parseFloat(valStr.replace(',', '.'));
+                const ansFloat = parseFloat(q.ans);
+
+                if (valStr !== '' && !isNaN(valFloat) && valFloat === ansFloat) {
+                    score++; 
+                    feedbackBoxes.push(displayFeedback(q.id, true, q.exp));
+                } else {
+                    feedbackBoxes.push(displayFeedback(q.id, false, q.exp));
+                }
+            });
+
+            // Chấm Phần 3
+            currentQuizData.part3.forEach(q => {
+                let correct = true;
+                for (let i = 0; i < q.ans.length; i++) {
+                    const val = document.getElementById(`${q.id}-in-${i}`).value;
+                    const expected = q.ans[i] === '1' ? '' : q.ans[i];
+                    if (val !== expected) correct = false;
+                }
+                
+                if (correct) {
+                    score++; 
+                    feedbackBoxes.push(displayFeedback(q.id, true, q.exp));
+                } else {
+                    feedbackBoxes.push(displayFeedback(q.id, false, q.exp));
+                }
+            });
+
+            // Gọi MathJax render cho các ô giải thích
+            if (window.MathJax && window.MathJax.typesetPromise) {
+                MathJax.typesetPromise(feedbackBoxes);
+            }
+
+            // --- BẮT ĐẦU: TÍCH HỢP GOOGLE SHEETS ---
+            const studentClass = document.getElementById('header-class').value;
+            const studentName = document.getElementById('header-name').value;
+            const finalScore = `${score}/${total}`;
+            
+            // Đã điền Link Web App của bạn
+            const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxdMjeJ50nLl-9YZRtaCOGMl0JQL-2107fa38gb3wkZGz4g9S-rBc0_zh_Bs8lcXejEoA/exec"; 
+
+            if (SCRIPT_URL && SCRIPT_URL !== "") {
+                const btnAction = document.getElementById('btn-action');
+                btnAction.innerHTML = `<svg class="animate-spin w-7 h-7 mr-3 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg><span id="btn-text">Đang lưu điểm...</span>`;
+                btnAction.disabled = true;
+
+                fetch(SCRIPT_URL, {
+                    method: 'POST',
+                    mode: 'no-cors', // QUAN TRỌNG: Thêm dòng này để không bị trình duyệt chặn (CORS)
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify({ lop: studentClass, hoTen: studentName, diem: finalScore })
+                }).finally(() => {
+                    // Cho thời gian trễ 1 giây để giả lập lưu (vì no-cors không đọc được response trả về)
+                    setTimeout(() => {
+                        hoanTatNopBai(score, total);
+                    }, 1000);
+                });
+            } else {
+                hoanTatNopBai(score, total);
+            }
+        }
+
+        function hoanTatNopBai(score, total) {
+            // Cập nhật Format Bài Thi
+            const examScoreEl = document.getElementById('exam-score');
+            const examCommentEl = document.getElementById('exam-comment');
+            
+            examScoreEl.textContent = `${score}/${total}`;
+
+            if (score === total) {
+                examCommentEl.textContent = "Tuyệt vời! Em nắm bài rất vững, đạt điểm tối đa.";
+                examCommentEl.className = "text-xl font-bold text-green-600 italic";
+            } else if (score >= 7) {
+                examCommentEl.textContent = "Làm tốt lắm! Cẩn thận hơn một chút để đạt điểm tuyệt đối nhé.";
+                examCommentEl.className = "text-xl font-bold text-blue-600 italic";
+            } else if (score >= 5) {
+                examCommentEl.textContent = "Đạt yêu cầu. Hãy xem lại các câu sai bên dưới để rút kinh nghiệm.";
+                examCommentEl.className = "text-xl font-bold text-orange-600 italic";
+            } else {
+                examCommentEl.textContent = "Cần ôn tập lại kiến thức kĩ hơn. Hãy đọc kĩ giải thích bên dưới!";
+                examCommentEl.className = "text-xl font-bold text-red-600 italic";
+            }
+
+            isSubmitted = true;
+            const btnAction = document.getElementById('btn-action');
+            btnAction.disabled = false;
+            // Đổi style thành màu xanh mòng két (teal) cho nút "Làm Đề Khác"
+            btnAction.className = "inline-flex items-center justify-center px-12 py-4 border-4 border-teal-600 text-2xl font-bold rounded-2xl shadow-[0_8px_0_#0d9488] text-teal-700 bg-white hover:bg-teal-50 transition-all active:translate-y-[8px] active:shadow-[0_0px_0_#0d9488] ease-in-out tracking-wide";
+            btnAction.innerHTML = `<svg class="w-7 h-7 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>Làm Đề Khác`;
+            
+            // Khóa tất cả các ô nhập liệu 
+            document.querySelectorAll('#quiz-container input, #quiz-container select').forEach(inp => {
+                inp.disabled = true;
+                inp.classList.add('opacity-70', 'cursor-not-allowed');
+            });
+
+            // Cuộn lên Header để xem điểm
+            setTimeout(() => document.getElementById('exam-header-box').scrollIntoView({ behavior: 'smooth', block: 'center' }), 150);
+        }
+
+        // Bắt đầu ứng dụng
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initQuiz);
+        } else {
+            initQuiz();
+        }
+    </script>
+</body>
+</html>
